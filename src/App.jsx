@@ -17,7 +17,8 @@ function App() {
 
       <footer className="bg-white border-t mt-auto">
         <div className="container mx-auto px-4 py-4 text-center text-gray-600">
-          <p>© {new Date().getFullYear()} Interview AI Assistant. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Interview AI Assistant.@ <a href="https://shankaranarayanansk.web.app/" className='font-bold font-weight: text-black	
+'>Shankar Dev</a></p>
         </div>
       </footer>
     </div>
