@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Mic } from "lucide-react";
-import { startAudioRecording, stopAudioRecording } from '../utils/audioUtils';
+import { startAudioRecording, stopAudioRecording, cleanup } from '../utils/audioUtils';
 import { transcribeAudio, getGeminiResponse } from '../utils/apiUtils';
 
 const InterviewAssistant = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [interviewerQuestion, setInterviewerQuestion] = useState('');
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   const formatResponse = (text) => {
     if (!text) return '';
@@ -41,16 +45,30 @@ const InterviewAssistant = () => {
     });
   };
 
+  const processAudio = async (transcriptText) => {
+    setIsLoading(true);
+    try {
+      const aiResponse = await getGeminiResponse(transcriptText);
+      setResponse(aiResponse);
+    } catch (err) {
+      setError('Error processing audio: ' + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Update the toggleRecording function
   const toggleRecording = async () => {
     setError('');
     
     if (isRecording) {
       try {
-        const audioBlob = await stopAudioRecording();
+        const transcriptText = await stopAudioRecording();
         setIsRecording(false);
-        await processAudio(audioBlob);
+        // Process the transcript directly
+        await processAudio(transcriptText);
       } catch (err) {
-        setError('Error stopping recording: ' + err.message);
+        setError("Didn't catch anything referesh & try:"+err.message);
       }
     } else {
       try {
@@ -62,22 +80,7 @@ const InterviewAssistant = () => {
         setError('Error starting recording: ' + err.message);
       }
     }
-  };
-
-  const processAudio = async (audioBlob) => {
-    setIsLoading(true);
-    try {
-      const transcriptText = await transcribeAudio(audioBlob);
-      setTranscript(transcriptText);
-      setInterviewerQuestion(transcriptText);
-      const aiResponse = await getGeminiResponse(transcriptText);
-      setResponse(aiResponse);
-    } catch (err) {
-      setError('Error processing audio: ' + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  };  
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -116,17 +119,6 @@ const InterviewAssistant = () => {
         <Card className="mb-4 border-red-500">
           <CardContent className="text-red-500 p-4">
             {error}
-          </CardContent>
-        </Card>
-      )}
-
-      {transcript && (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800">Interviewer Question</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-700">
-            {interviewerQuestion}
           </CardContent>
         </Card>
       )}
@@ -208,4 +200,4 @@ const InterviewAssistant = () => {
   );
 };
 
-export default InterviewAssistant;
+export default InterviewAssistant;  
